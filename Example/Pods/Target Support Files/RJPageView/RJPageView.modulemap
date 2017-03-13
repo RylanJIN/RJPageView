@@ -1,0 +1,6 @@
+framework module RJPageView {
+  umbrella header "RJPageView-umbrella.h"
+
+  export *
+  module * { export * }
+}

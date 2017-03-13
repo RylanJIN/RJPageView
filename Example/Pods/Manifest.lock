@@ -1,0 +1,16 @@
+PODS:
+  - RJPageView (0.1.0)
+
+DEPENDENCIES:
+  - RJPageView (from `../`)
+
+EXTERNAL SOURCES:
+  RJPageView:
+    :path: ../
+
+SPEC CHECKSUMS:
+  RJPageView: 943582c1d7126572513bf07a409bab71440b56e8
+
+PODFILE CHECKSUM: 7dbd44009d324ce02f3e6ed97c46748eab535a7a
+
+COCOAPODS: 1.1.1

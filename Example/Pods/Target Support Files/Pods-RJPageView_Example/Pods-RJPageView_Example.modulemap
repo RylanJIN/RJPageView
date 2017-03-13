@@ -1,0 +1,6 @@
+framework module Pods_RJPageView_Example {
+  umbrella header "Pods-RJPageView_Example-umbrella.h"
+
+  export *
+  module * { export * }
+}
