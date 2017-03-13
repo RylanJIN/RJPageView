@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'RJPageView_Example' do
+  pod 'RJPageView', :path => '../'
+
+  target 'RJPageView_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
