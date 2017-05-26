@@ -211,7 +211,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
 - (void)reuseTableViewWithID:(NSUInteger)pageNumber
 {
     return; // will not apply reuse mechanism at this point
-    
+    /**
     NSMutableArray *notTaged = [NSMutableArray arrayWithArray:self.pageViews];
     NSMutableArray *taged = [NSMutableArray arrayWithArray:@[[NSNull null], [NSNull null], [NSNull null]]];
     
@@ -281,6 +281,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
 
     [self.pageViews removeAllObjects];
     [self.pageViews addObjectsFromArray:taged];
+     */
 }
 
 - (UIViewController *)viewControllerAtIndex:(NSUInteger)index
