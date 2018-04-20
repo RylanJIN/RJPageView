@@ -1,16 +1,19 @@
 PODS:
-  - RJPageView (0.1.0)
+  - Masonry (1.0.2)
+  - RJPageView (0.1.1):
+    - Masonry
 
 DEPENDENCIES:
   - RJPageView (from `../`)
 
 EXTERNAL SOURCES:
   RJPageView:
-    :path: ../
+    :path: "../"
 
 SPEC CHECKSUMS:
-  RJPageView: 943582c1d7126572513bf07a409bab71440b56e8
+  Masonry: 7c429b56da9d4ee0bbb3ed77a5ea710d6a5df39e
+  RJPageView: c6eddf3a968b038049bc6cf86d1e1ce4326a7d3e
 
 PODFILE CHECKSUM: 7dbd44009d324ce02f3e6ed97c46748eab535a7a
 
-COCOAPODS: 1.1.1
+COCOAPODS: 1.2.1

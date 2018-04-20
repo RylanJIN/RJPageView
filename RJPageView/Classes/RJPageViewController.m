@@ -22,6 +22,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
 @property (nonatomic, assign) BOOL           userDragged;
 @property (nonatomic, strong) NSMutableArray *pageViews;
 @property (nonatomic, strong) NSMutableArray *contents;
+@property (nonatomic, strong) UIView         *coverView;
 
 @end
 
@@ -31,6 +32,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
 {
     self = [super init];
     if (self) {
+        self.preLoad = YES;
         self.tabFont = [UIFont systemFontOfSize:14.f];
     }
     return self;
@@ -44,11 +46,18 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
         [self setEdgesForExtendedLayout:UIRectEdgeNone];
         [self setAutomaticallyAdjustsScrollViewInsets:NO];
     }
-    
+    if (self.dataSource && [self.dataSource respondsToSelector:@selector(coverViewForviewPage:)]) {
+        self.coverView   = [self.dataSource coverViewForviewPage:self];
+        [self.view addSubview:self.coverView];
+    }
     [self.view addSubview:self.tabView];
     [self.view addSubview:self.scrollView];
     
     // [self reloadData];
+}
+
+- (void)dealloc {
+    [self clearCoverScrollObserver];
 }
 
 - (void)viewWillLayoutSubviews
@@ -65,6 +74,18 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
         sHeight -= overlayLength;
     }
 
+    if (self.coverView) {
+        CGRect rect = CGRectZero;
+        if (self.dataSource && [self.dataSource respondsToSelector:@selector(viewPage:rectForCoverView:)]) {
+            rect    = [self.dataSource viewPage:self rectForCoverView:self.coverView];
+        }
+        if (!CGRectEqualToRect(rect, CGRectZero)) {
+            [self.coverView setFrame:rect];
+            // [self.view addSubview:self.coverView];
+            overlayLength += rect.size.height;
+        }
+    }
+    
     CGRect tabRect  = self.tabView.frame;
     if (CGRectEqualToRect(tabRect, CGRectZero)) {
         [self.tabView setFrame:CGRectMake(0,      overlayLength,
@@ -79,15 +100,17 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
     CGFloat xOffset = self.currentPage * self.scrollView.frame.size.width;
     self.scrollView.contentOffset               = CGPointMake(xOffset, 0);
     
-    [self.pageViews enumerateObjectsUsingBlock:^(UIView *view, NSUInteger idx, BOOL *stop) {
-        CGFloat pageHeight     = CGRectGetHeight(self.scrollView.frame);
-        [view setFrame:CGRectMake(idx * sWidth, 0, sWidth, pageHeight)];
-    }];
+    if (self.preLoad) {
+        [self.pageViews enumerateObjectsUsingBlock:^(UIView *view, NSUInteger idx, BOOL *stop) {
+            CGFloat pageHeight     = CGRectGetHeight(self.scrollView.frame);
+            [view setFrame:CGRectMake(idx * sWidth, 0, sWidth, pageHeight)];
+        }];
+    }
 }
 
 - (void)reloadData
 {
-//    dispatch_async(dispatch_get_main_queue(), ^{
+    // dispatch_async(dispatch_get_main_queue(), ^{
     [self.contents removeAllObjects]; [self.pageViews removeAllObjects];
     
     [self.childViewControllers enumerateObjectsUsingBlock:^(UIViewController *vc, NSUInteger idx, BOOL *stop) {
@@ -95,7 +118,8 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
         [vc.view removeFromSuperview];
         [vc removeFromParentViewController];
     }];
-    
+    [self clearCoverScrollObserver];
+
     self.tabCount  = [self.dataSource numberOfTabsForViewPage:self];
     self.contents  = [NSMutableArray arrayWithCapacity:self.tabCount];
     self.pageViews = [NSMutableArray arrayWithCapacity:self.tabCount];
@@ -118,19 +142,15 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
     }
     // [self reuseTableViewWithID:self.currentPage];
     
-    for (int i = 0; i < self.tabCount; i ++) {
-        UIViewController *vc = [self viewControllerAtIndex:i];
-        if (vc) {
-            [self addChildViewController:vc];
-            if (vc.view) {
-                [self.scrollView addSubview:vc.view];
-                [self.pageViews addObject:vc.view];
-            }
-            [vc didMoveToParentViewController:self];
+    if (self.preLoad) {
+        for (int i = 0; i < self.tabCount; i ++) {
+            [self loadContentViewControllerAtIndex:i];
         }
+        [self.view setNeedsLayout];
+    } else {
+        [self loadContentViewControllerAtIndex:self.currentPage];
     }
-    [self.view setNeedsLayout];
-//    });
+    // });
 }
 
 - (void)selectPageAtIndex:(NSUInteger)index
@@ -140,17 +160,99 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
     [self.tabView selectTabAtIndex:index];
 }
 
+- (void)clearCoverScrollObserver
+{
+    for (UIViewController *vc in self.childViewControllers) {
+        if (self.coverView && [vc conformsToProtocol:@protocol(RJPageContentConfiguration)]) {
+            UIScrollView *coverScrollView = nil;
+            if ([vc respondsToSelector:@selector(coverScrollView)]) {
+                coverScrollView = [(id<RJPageContentConfiguration>)vc coverScrollView];
+            }
+            [coverScrollView removeObserver:self forKeyPath:@"contentOffset"];
+        }
+    }
+}
+
 #pragma mark - RJTabViewDelegate
 - (void)tabView:(RJTabView *)tabView didSelectedAtIndex:(NSUInteger)index
 {
+    [self loadContentViewControllerAtIndex:index];
+    
     self.scrollView.contentOffset = CGPointMake(index * self.scrollView.frame.size.width, 0);
-//    [self.scrollView setContentOffset:CGPointMake(index * self.scrollView.frame.size.width, 0.)animated:NO];
-    self.currentPage = index; [self reuseTableViewWithID:index];
+    // [self.scrollView setContentOffset:CGPointMake(index * self.scrollView.frame.size.width, 0.)
+                             // animated:NO];
+    self.currentPage          = index;
+    [self reuseTableViewWithID:index];
+    
     [self.delegate viewPage:self didSelectedAtIndex:index];
 }
 
+- (void)loadContentViewControllerAtIndex:(NSInteger)index
+{
+    UIViewController *vc = [self viewControllerAtIndex:index];
+    
+    if (vc && ![self.childViewControllers containsObject:vc]) {
+        [self addChildViewController:vc];
+        if (vc.view) {
+            [self.scrollView addSubview:vc.view];
+            [self.pageViews addObject:vc.view];
+        }
+        CGFloat pageHeight = CGRectGetHeight(self.scrollView.frame);
+        CGFloat sWidth     = CGRectGetWidth (self.view.frame);
+        
+        [vc.view setFrame:CGRectMake(index * sWidth, 0, sWidth, pageHeight)];
+        
+        [vc didMoveToParentViewController:self];
+        
+        if (self.coverView && [vc conformsToProtocol:@protocol(RJPageContentConfiguration)]) {
+            UIScrollView *coverScrollView = nil;
+            if ([vc respondsToSelector:@selector(coverScrollView)]) {
+                coverScrollView = [(id<RJPageContentConfiguration>)vc coverScrollView];
+            }
+            coverScrollView.scrollsToTop = NO;
+             coverScrollView.tag         = index;
+            [coverScrollView addObserver:self
+                              forKeyPath:@"contentOffset"
+                                 options:NSKeyValueObservingOptionInitial | NSKeyValueObservingOptionNew
+                                 context:nil];
+        }
+    }
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    UIScrollView *scrollView = object;
+    
+    if ([keyPath isEqualToString:@"contentOffset"]) {
+        if (scrollView.tag  != self.currentPage) {
+            return;
+        }
+        if (self.childViewControllers.count == 0) {
+            return;
+        }
+        CGFloat offset      = scrollView.contentOffset.y;
+        CGRect coverRect    = [self.dataSource viewPage:self rectForCoverView:self.coverView];
+        UIView *coverView   = (UIView *)self.coverView;
+        CGRect frame        = coverView.frame;
+        CGFloat coverHeight = MAX(coverRect.size.height - offset, 0) ;
+        coverHeight         = MIN(coverHeight, CGRectGetHeight(coverRect));
+        
+        coverView.frame     = CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, coverHeight);
+
+        CGRect tabRect      = self.tabView.frame;
+        CGRect scrollRect   = self.scrollView.frame;
+
+        [self.tabView setFrame:CGRectMake(0, coverHeight, tabRect.size.width, tabRect.size.height)];
+        [self.scrollView setFrame:CGRectMake(0, coverHeight+44, scrollRect.size.width, scrollRect.size.height)];
+    }
+}
+
 #pragma mark - UIScrollViewDelegate
-- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
     self.userDragged = YES;
     [self.view setUserInteractionEnabled:NO];
 }
@@ -331,7 +433,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
     if (!_scrollView) {
         _scrollView = [UIScrollView new];
         _scrollView.showsHorizontalScrollIndicator = NO;
-        [_scrollView setBackgroundColor:[UIColor whiteColor]];
+        [_scrollView setBackgroundColor:[UIColor clearColor]];
         [_scrollView setPagingEnabled:YES];
         [_scrollView setDelegate:self];
         [_scrollView setBounces:NO];
@@ -339,8 +441,7 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
     return _scrollView;
 }
 
-- (NSUInteger)selectedIndex
-{
+- (NSUInteger)selectedIndex {
     return self.currentPage;
 }
 
