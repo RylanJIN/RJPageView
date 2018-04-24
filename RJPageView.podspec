@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'RJPageView'
-  s.version          = '0.2.0'
+  s.version          = '0.2.1'
   s.summary          = 'Page view with scroll gesture available.'
 
 # This description is used to generate tags and improve search results.
