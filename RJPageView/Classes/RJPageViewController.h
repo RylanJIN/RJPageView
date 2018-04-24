@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "RJTabView.h"
 
 @class RJPageViewController;
 
@@ -60,6 +61,7 @@
 @property (nonatomic, weak) id<RJPageDelegate>   delegate;
 
 @property (nonatomic, assign)           BOOL        preLoad; // default YES
+@property (nonatomic, assign)           RJTabStyle  tabStyle;
 @property (nonatomic, strong)           UIFont     *tabFont;
 @property (nonatomic, assign, readonly) NSUInteger selectedIndex;
 

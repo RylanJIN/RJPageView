@@ -62,8 +62,10 @@
 }
 
 #pragma mark - Separate Line
-- (void)showSeparatorLine:(SeparateLineShow)flag
+- (void)showSeparatorLine:(SeparateLineShow)flag bottomLine:(BOOL)show
 {
+    self.lineB.hidden = !show;
+
     self.lineL.hidden = !(flag & SeparateLineShowLeft);
     self.lineR.hidden = !(flag & SeparateLineShowRight);
 }

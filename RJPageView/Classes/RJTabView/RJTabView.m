@@ -80,8 +80,20 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
                                 scrollPosition:(UICollectionViewScrollPositionNone)];
     UICollectionViewLayoutAttributes *attributes = [self.collectionView.collectionViewLayout
                                                     layoutAttributesForItemAtIndexPath:path];
-    self.indicator.frame = CGRectMake(CGRectGetMinX (attributes.frame), 41,
-                                      CGRectGetWidth(attributes.frame), 3);
+    BOOL plainMode = self.tabStyle == RJTabStylePlain;
+    CGFloat tabY   = plainMode ? 30. : 41;
+    CGFloat tabH   = plainMode ? 1.5 : 3.;
+    CGFloat tabX   = CGRectGetMinX (attributes.frame);
+    CGFloat tabW   = CGRectGetWidth(attributes.frame);
+    
+    if (plainMode) {
+        CGFloat fontWidth = [self stringSize:self.tabs[index]
+                                       frame:CGSizeMake(CGRectGetWidth(self.bounds), 44)
+                                        font:self.tabFont].width;
+        tabW              = MIN(fontWidth, tabW);
+        tabX              = (CGRectGetWidth(attributes.frame) - tabW) / 2.f;
+    }
+    self.indicator.frame = CGRectMake(tabX, tabY, tabW, tabH);
     if ([self.delegate respondsToSelector:@selector(tabView:didSelectedAtIndex:)]) {
         [self.delegate tabView:self didSelectedAtIndex:self.selectedIndex];
     }
@@ -170,7 +182,10 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
                                                                      forIndexPath:indexPath];
     cell.titleLabel.text = self.tabs[indexPath.item];
     cell.titleLabel.font = self.tabFont;
-    [cell showSeparatorLine:indexPath.item ? SeparateLineShowLeft : SeparateLineShowNone];
+    BOOL defMode         = self.tabStyle == RJTabStyleDefault;
+    BOOL showLine        = indexPath.item && defMode;
+    [cell showSeparatorLine:showLine ? SeparateLineShowLeft : SeparateLineShowNone
+                 bottomLine:defMode];
     
     return cell;
 }
@@ -183,7 +198,7 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
                                    frame:CGSizeMake(CGRectGetWidth(self.bounds), 44)
                                     font:self.tabFont].width;
     CGFloat meanWidht = [UIScreen mainScreen].bounds.size.width/[self.tabs count];
-    CGFloat width = MAX(MAX(MIN_ITEM_WIDHT,fontWidth + 10), meanWidht);
+    CGFloat width     = MAX(MAX(MIN_ITEM_WIDHT, fontWidth + 10), meanWidht);
     
     return CGSizeMake(width, 44);
 }
@@ -244,7 +259,9 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
     CGFloat tOffset  = (nextItemContentOffsetX - previousItemContentOffsetX);
     CGRect fRect     = self.indicator.frame;
     CGFloat cOffset  = self.collectionView.contentOffset.x - previousItemContentOffsetX;
+    
     if (tOffset == 0) tOffset = 1;
+    
     fRect.size.width = previousItemWidth + (cOffset * iWidth) / tOffset;
     
     [self.indicator setFrame:fRect];
@@ -278,8 +295,15 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
     NSIndexPath *path = [NSIndexPath indexPathForItem:index inSection:0];
     UICollectionViewLayoutAttributes *attributes = [self.collectionView.collectionViewLayout
                                                     layoutAttributesForItemAtIndexPath:path];
-    return attributes.frame.size.width;
+    CGFloat itemWidth = attributes.frame.size.width;
     
+    if (self.tabStyle == RJTabStylePlain) {
+        CGFloat fontWidth = [self stringSize:self.tabs[index]
+                                       frame:CGSizeMake(CGRectGetWidth(self.bounds), 44)
+                                        font:self.tabFont].width;
+        return MIN(fontWidth, itemWidth);
+    }
+    return itemWidth;
 }
 
 #pragma mark - Getters & Setters

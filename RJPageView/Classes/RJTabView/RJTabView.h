@@ -8,6 +8,11 @@
 
 #import <UIKit/UIKit.h>
 
+typedef NS_ENUM(NSInteger, RJTabStyle) {
+    RJTabStyleDefault = 0,
+    RJTabStylePlain   = 1
+};
+
 @class RJTabView;
 
 @protocol RJTabViewDelegate <NSObject>
@@ -21,6 +26,7 @@
 @property (nonatomic,   weak) id<RJTabViewDelegate> delegate;
 @property (nonatomic, strong)            UIFont     *tabFont;
 @property (nonatomic, assign, readwrite) NSUInteger selectedIndex;
+@property (nonatomic, assign, readwrite) RJTabStyle tabStyle;
 
 - (void)setTabs:(NSArray *)tabs defalutIndex:(NSUInteger)index;
 /**

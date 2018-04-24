@@ -18,6 +18,6 @@ typedef NS_ENUM(NSInteger, SeparateLineShow) {
 
 @property (nonatomic, strong) UILabel *titleLabel;
 
-- (void)showSeparatorLine:(SeparateLineShow)flag;
+- (void)showSeparatorLine:(SeparateLineShow)flag bottomLine:(BOOL)show;
 
 @end

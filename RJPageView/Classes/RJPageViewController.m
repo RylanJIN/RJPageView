@@ -421,8 +421,9 @@ static const NSUInteger TAB_VIEW_HEIGHT  = 44;
 - (RJTabView *)tabView
 {
     if (!_tabView) {
-        _tabView         = [RJTabView new];
-        _tabView.tabFont = self.tabFont;
+        _tabView          = [RJTabView new];
+        _tabView.tabFont  = self.tabFont;
+        _tabView.tabStyle = self.tabStyle;
         [_tabView setDelegate:self];
     }
     return _tabView;
