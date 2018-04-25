@@ -91,7 +91,7 @@ static const NSUInteger MIN_ITEM_WIDHT = 90;
                                        frame:CGSizeMake(CGRectGetWidth(self.bounds), 44)
                                         font:self.tabFont].width;
         tabW              = MIN(fontWidth, tabW);
-        tabX              = (CGRectGetWidth(attributes.frame) - tabW) / 2.f;
+        tabX             += (CGRectGetWidth(attributes.frame) - tabW) / 2.f;
     }
     self.indicator.frame = CGRectMake(tabX, tabY, tabW, tabH);
     if ([self.delegate respondsToSelector:@selector(tabView:didSelectedAtIndex:)]) {
